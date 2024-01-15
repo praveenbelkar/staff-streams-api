@@ -1,0 +1,30 @@
+{
+  "name": "jdbc_source_hub_staff_uat",
+  "config": {
+    "tasks.max": "1",
+    "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+    "connection.url": "jdbc:sqlserver://db-nswedu-hub-preprod.database.windows.net;port=1433;database=Hub;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;authentication=SqlPassword;sslProtocol=TLSv1.2",
+    "connection.password": "jhb77687gbvJHVBVBtc678",
+    "connection.user": "svcKAFKAHubReadOnly",
+    "producer.override.sasl.jaas.config": "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required username=\"replace-kafka-user-here\" password=\"replace-kafka-password-here\"  metadataServerUrls=\"https://tl0992kfkab001.nsw.education:8090,https://tl0992kfkab002.nsw.education:8090,https://tl0992kfkab003.nsw.education:8090\";",
+    "basic.auth.user.info": "replace-kafka-user-here:replace-kafka-password-here",
+    "schema.registry.url": "https://tl0992kfkac001.nsw.education:8081,https://tl0992kfkac002.nsw.education:8081",
+    "db.timezone": "UTC",
+    "mode": "bulk",
+    "query": "SELECT employee.UniqueId as staffIdentifier, employee.EmployeeTitle as staffTitleTypeCode, employee.EmployeeFirstName as staffGivenName, employee.EmployeeMiddleName as staffMiddleName, employee.EmployeeLastName as staffFamilyName, employee.DoEUserId as staffDoEUserIdentifier, employee.Email as staffDoEEmailAddress, employee.Street as staffStreetAddressLine1, employee.City as staffStreetAddressSuburbName, employee.State as staffStreetAddressStateCode, employee.PostalCode as staffStreetAddressPostalCodeIdentifier, employee.Phone as staffPhoneNumber, employee.Gender as staffGenderTypeCode, employee.WWCNumber as staffWorkingWithChildrenCheckNumber, school_employee_relation.OrgUniqueId as staffschoolCode, school_employee_relation.UniqueId as schoolStaffIdentifier, school_employee_relation.PayScaleAreaText as staffPositionName, school_employee_relation.EmploymentStatus as employmentStatus, school_employee_relation.HoursPerWeek as hoursPerWeek, school_employee_relation.PositionType as positionType, school_employee_relation.metacreatedby, school_employee_relation.metacreateddate, school_employee_relation.metaprovidedby FROM hub.stg.KAFKA_Employee_UAT employee LEFT OUTER JOIN hub.stg.KAFKA_SchoolEmployeeRelationship_UAT school_employee_relation ON employee.UniqueId=school_employee_relation.EmployeeUniqueId UNION ALL SELECT E.UniqueId as staffIdentifier, E.EmployeeTitle as staffTitleTypeCode,E.EmployeeFirstName as staffGivenName,E.EmployeeMiddleName as staffMiddleName,E.EmployeeLastName as staffFamilyName,E.DoEUserId as staffDoEUserIdentifier, E.Email as staffDoEEmailAddress, E.Street as staffStreetAddressLine1, E.City as staffStreetAddressSuburbName, E.State as staffStreetAddressStateCode, E.PostalCode as staffStreetAddressPostalCodeIdentifier, E.Phone as staffPhoneNumber, E.Gender as staffGenderTypeCode, E.WWCNumber as staffWorkingWithChildrenCheckNumber, S.SchoolCode as staffschoolCode, SE.UniqueId as schoolStaffIdentifier, SE.PayScaleAreaText as staffPositionName, SE.EmploymentStatus as employmentStatus, SE.HoursPerWeek as hoursPerWeek, SE.PositionType as positionType, SE.metacreatedby, SE.metacreateddate, SE.metaprovidedby   from [stg].[KAFKA_SchoolEmployeeRelationship_UAT] SE  INNER JOIN [stg].[KAFKA_Employee_UAT] E ON E.UniqueId = SE.EmployeeUniqueId   AND PayScaleAreaText = 'PSSE'  INNER JOIN [stg].[KAFKA_School_UAT] S  ON S.[PrincipalNetworkDirector] = E.[EmployeeTitle] + ' ' + TRIM(E.[EmployeeFirstName]) + ' ' + TRIM(E.[EmployeeLastName])",
+    "topic.prefix": "staff-hub-db-uat",
+    "poll.interval.ms": "3600000",
+    "errors.log.enable": "true",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "https://tl0992kfkac001.nsw.education:8081",
+    "value.converter.basic.auth.credentials.source": "USER_INFO",
+    "value.converter.basic.auth.user.info": "replace-kafka-user-here:replace-kafka-password-here",
+    "transforms": "SetSchemaMetadata, CreateKey",
+    "transforms.SetSchemaMetadata.type": "org.apache.kafka.connect.transforms.SetSchemaMetadata$Value",
+    "transforms.SetSchemaMetadata.schema.name": "education.nsw.streams.avro.api.StaffSource",
+    "transforms.CreateKey.type": "org.apache.kafka.connect.transforms.ValueToKey",
+    "transforms.CreateKey.fields": "staffIdentifier"
+  }
+}

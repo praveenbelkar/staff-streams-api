@@ -1,0 +1,31 @@
+{
+  "name": "jdbc_source_hub_staff_v2",
+  "config": {
+    "tasks.max": "1",
+    "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+    "connection.url": "jdbc:sqlserver://db-nswedu-hub-preprod.database.windows.net;port=1433;database=Hub;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;authentication=SqlPassword;sslProtocol=TLSv1.2",
+    "connection.password": "jhb77687gbvJHVBVBtc678",
+    "connection.user": "svcKAFKAHubReadOnly",
+    "producer.override.sasl.jaas.config": "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required username=\"replace-kafka-user-here\" password=\"replace-kafka-password-here\"   metadataServerUrls=\"https://dl0991kfkab201.nsw.education:8090,https://dl0992kfkab202.nsw.education:8090,https://dl0992kfkab206.nsw.education:8090,https://dl0991kfkab205.nsw.education:8090\";",
+    "basic.auth.user.info": "replace-kafka-user-here:replace-kafka-password-here",
+    "schema.registry.url": "https://dl0992kfkac201.nsw.education:8081,https://dl0992kfkac202.nsw.education:8081",
+    "db.timezone": "UTC",
+    "mode": "bulk",
+    "query": "SELECT employee.UniqueId as staffIdentifier, employee.EmployeeTitle as staffTitleTypeCode, trim(employee.EmployeeFirstName) as staffGivenName, trim(employee.EmployeeMiddleName) as staffMiddleName, trim(employee.EmployeeLastName) as staffFamilyName, trim(employee.DoEUserId) as staffDoEUserIdentifier, trim(employee.Email) as staffDoEEmailAddress, employee.Street as staffStreetAddressLine1, employee.City as staffStreetAddressSuburbName, employee.State as staffStreetAddressStateCode, employee.PostalCode as staffStreetAddressPostalCodeIdentifier, trim(employee.Phone) as staffPhoneNumber, employee.Gender as staffGenderTypeCode, trim(employee.WWCNumber) as staffWorkingWithChildrenCheckNumber, employee.SAPEmployeeId as staffSAPEmployeeIdentifier, trim(employee.SAPSystemId) as staffSAPSystemIdentifier, school_employee_relation.OrgUniqueId as staffschoolCode, school_employee_relation.UniqueId as schoolStaffIdentifier, school_employee_relation.PayScaleAreaText as staffPositionName, school_employee_relation.EmploymentStatus as employmentStatus, school_employee_relation.HoursPerWeek as hoursPerWeek, school_employee_relation.PositionType as positionType, cast(school_employee_relation.FunctionalUnitCode as nvarchar) as staffFunctionalUnitCode, trim(school_employee_relation.FunctionalUnitName) as staffFunctionalUnitName, cast(school_employee_relation.ManagementUnitCode as nvarchar) as staffManagementUnitCode, trim(school_employee_relation.ManagementUnitName) as staffManagementUnitName, school_employee_relation.PayScaleSubGroup as staffPayScaleSubGroup, cast(employee.archived as nvarchar) as staffStatus, trim(employee.CellPhone) as staffMobileNumber, school_employee_relation.metacreatedby, school_employee_relation.metacreateddate, school_employee_relation.metaprovidedby FROM hub.stg.KAFKA_Employee_DEV employee LEFT OUTER JOIN hub.stg.KAFKA_SchoolEmployeeRelationship_DEV school_employee_relation ON employee.UniqueId=school_employee_relation.EmployeeUniqueId UNION ALL SELECT E.UniqueId as staffIdentifier, E.EmployeeTitle as staffTitleTypeCode, trim(E.EmployeeFirstName) as staffGivenName, trim(E.EmployeeMiddleName) as staffMiddleName, trim(E.EmployeeLastName) as staffFamilyName, trim(E.DoEUserId) as staffDoEUserIdentifier, trim(E.Email) as staffDoEEmailAddress, E.Street as staffStreetAddressLine1, E.City as staffStreetAddressSuburbName, E.State as staffStreetAddressStateCode, E.PostalCode as staffStreetAddressPostalCodeIdentifier, trim(E.Phone) as staffPhoneNumber, E.Gender as staffGenderTypeCode, trim(E.WWCNumber) as staffWorkingWithChildrenCheckNumber, E.SAPEmployeeId as staffSAPEmployeeIdentifier, trim(E.SAPSystemId) as staffSAPSystemIdentifier, S.SchoolCode as staffschoolCode, SE.UniqueId as schoolStaffIdentifier, SE.PayScaleAreaText as staffPositionName, SE.EmploymentStatus as employmentStatus, SE.HoursPerWeek as hoursPerWeek, SE.PositionType as positionType, cast(SE.FunctionalUnitCode as nvarchar) as staffFunctionalUnitCode, trim(SE.FunctionalUnitName) as staffFunctionalUnitName, cast(SE.ManagementUnitCode as nvarchar) as staffManagementUnitCode, trim(SE.ManagementUnitName) as staffManagementUnitName, SE.PayScaleSubGroup as staffPayScaleSubGroup, cast(E.archived as nvarchar) as staffStatus, trim(E.CellPhone) as staffMobileNumber, SE.metacreatedby, SE.metacreateddate, SE.metaprovidedby from [stg].[KAFKA_SchoolEmployeeRelationship_DEV] SE INNER JOIN [stg].[KAFKA_Employee_DEV] E ON E.UniqueId = SE.EmployeeUniqueId INNER JOIN [stg].[KAFKA_School_DEV] S ON S.[PrincipalNetworkDirector] = E.[EmployeeTitle] + ' ' + TRIM(E.[EmployeeFirstName]) + ' ' + TRIM(E.[EmployeeLastName]) WHERE PayScaleAreaText = 'PSSE'",
+    "topic.prefix": "staff-hub-db-v2",
+    "poll.interval.ms": "3600000",
+    "errors.log.enable": "true",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "https://dl0992kfkac201.nsw.education:8081",
+    "value.converter.auto.register.schemas": "false",
+    "value.converter.basic.auth.credentials.source": "USER_INFO",
+    "value.converter.basic.auth.user.info": "replace-kafka-user-here:replace-kafka-password-here",
+    "transforms": "SetSchemaMetadata, CreateKey",
+    "transforms.SetSchemaMetadata.type": "org.apache.kafka.connect.transforms.SetSchemaMetadata$Value",
+    "transforms.SetSchemaMetadata.schema.name": "education.nsw.streams.avro.api.StaffSource",
+    "transforms.CreateKey.type": "org.apache.kafka.connect.transforms.ValueToKey",
+    "transforms.CreateKey.fields": "staffIdentifier"
+  }
+}

@@ -1,0 +1,154 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    image.openshift.io/triggers: >-
+      [{"from":{"kind":"ImageStreamTag","name":"staff-processor:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"staff-processor-dev-secure\")].image"}]
+    template.alpha.openshift.io/wait-for-ready: "true"
+  labels:
+    app: staff-processor-dev-secure
+    promotion-group: staff-processor-dev-secure
+  name: staff-processor-dev-secure
+spec:
+  podManagementPolicy: Parallel
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: staff-processor-dev-secure
+  serviceName: staff-processor-dev-secure
+  template:
+    metadata:
+      annotations:
+        alpha.image.policy.openshift.io/resolve-names: '*'
+        deploymentTimestamp: "0"
+      labels:
+        app: staff-processor-dev-secure
+    spec:
+      containers:
+        - env:
+            - name: QUARKUS_PROFILE
+              value: secure
+            - name: STAFF_INPUT_TOPIC
+              value: staff-hub-db-uat
+            - name: STAFF_OUTPUT_TOPIC
+              value: staff-hub-streaming-uat
+            - name: STAFF_DEDUPLICATED_TOPIC
+              value: staff-hub-deduplicated-uat
+            - name: STAFF_DEDUPLICATE_STATE_STORE
+              value: staff-deduplicate-state-store-uat
+            - name: STAFF_AGGREGATE_STATE_STORE
+              value: staff-aggregate-state-store-uat
+            - name: QUARKUS_KAFKA_STREAMS_APPLICATION_ID
+              value: staff-processor-uat
+            - name: QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS
+              value: dl0991kfkab201.nsw.education:9092,dl0992kfkab202.nsw.education:9092
+            - name: QUARKUS_KAFKA_STREAMS_SCHEMA_REGISTRY_URL
+              value: https://dl0992kfkac201.nsw.education:8081,https://dl0992kfkac202.nsw.education:8081
+            - name: NEW_RELIC_APP_NAME
+              value: staff-processor-dev-secure
+            - name: NEW_RELIC_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: apikey
+                  name: newrelic-apikey
+            - name: JAVA_OPTIONS
+              value: >-
+                -Dnewrelic.config.file=/newrelic-config/newrelic.yml
+                -Djavax.net.ssl.trustStore=/etc/truststore/kafka-truststore.jks
+                -Djavax.net.ssl.trustStorePassword=123456
+                -javaagent:/mnt/newrelic/newrelic-agent.jar
+            - name: NEW_RELIC_LOG
+              value: STDOUT
+            - name: KAFKA_USER
+              valueFrom:
+                secretKeyRef:
+                  key: kafka-user
+                  name: kafka-rbac-tau
+            - name: KAFKA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: kafka-password
+                  name: kafka-rbac-tau
+            - name: KAFKA_TRUSTSTORE_PASSWORD
+              value: "123456"
+            - name: NO_PROXY
+              value: .cluster.local,.det.nsw.edu.au,.svc,.nsw.education
+            - name: no_proxy
+              value: .cluster.local,.det.nsw.edu.au,.svc,.nsw.education
+          image: staff-processor:latest
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /health/live
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 120
+            periodSeconds: 60
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: staff-processor-dev-secure
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 8443
+              protocol: TCP
+            - containerPort: 8778
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 10
+            httpGet:
+              path: /health/ready
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 90
+            periodSeconds: 120
+            successThreshold: 1
+            timeoutSeconds: 120
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 4Gi
+            requests:
+              cpu: 100m
+              memory: 200Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /data/kafka-streams
+              name: rocksdb-volume
+            - mountPath: /mnt/newrelic
+              name: newrelic-volume
+            - mountPath: /newrelic-config
+              name: newrelic-config
+            - mountPath: /etc/truststore/kafka-truststore.jks
+              name: kafka-truststore
+              subPath: kafka-truststore.jks
+      dnsPolicy: ClusterFirst
+      initContainers:
+        - image: newrelic-agent:5.11.0
+          imagePullPolicy: Always
+          name: install-newrelic
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /opt/newrelic
+              name: newrelic-volume
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 300
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: newrelic-config
+          name: newrelic-config
+        - emptyDir: {}
+          name: newrelic-volume
+        - configMap:
+            defaultMode: 420
+            name: kafka-truststore-nr
+          name: kafka-truststore
+        - emptyDir: {}
+          name: rocksdb-volume
+  updateStrategy:
+    type: RollingUpdate
